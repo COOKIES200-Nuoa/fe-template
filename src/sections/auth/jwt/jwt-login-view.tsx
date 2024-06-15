@@ -23,6 +23,8 @@ import { PATH_AFTER_LOGIN } from 'src/config-global';
 import Iconify from 'src/components/iconify';
 import FormProvider, { RHFTextField } from 'src/components/hook-form';
 
+import { signIn } from "../../../services/cognito-auth"; // Import signIn from Cognito auth service
+
 // ----------------------------------------------------------------------
 
 export default function JwtLoginView() {
@@ -39,13 +41,17 @@ export default function JwtLoginView() {
   const password = useBoolean();
 
   const LoginSchema = Yup.object().shape({
+    username: Yup.string().required('Username is required'),
+    cognitoPw: Yup.string().required('Cognito password is required'),
     email: Yup.string().required('Email is required').email('Email must be a valid email address'),
     password: Yup.string().required('Password is required'),
   });
 
   const defaultValues = {
+    username: "test-user-2",
+    cognitoPw: "P@ssw0rd12366",
     email: 'demo@minimals.cc',
-    password: 'demo1234',
+    password: "demo1234",
   };
 
   const methods = useForm({
@@ -63,6 +69,9 @@ export default function JwtLoginView() {
     try {
       await login?.(data.email, data.password);
 
+      const session = await signIn(data.username, data.cognitoPw); // Call signIn from your cognito-auth service
+      // console.log("Login successful:", session);
+
       router.push(returnTo || PATH_AFTER_LOGIN);
     } catch (error) {
       console.error(error);
@@ -73,12 +82,12 @@ export default function JwtLoginView() {
 
   const renderHead = (
     <Stack spacing={2} sx={{ mb: 5 }}>
-      <Typography variant="h4">Sign in to Minimal</Typography>
+      <Typography variant="h3">Welcome Back</Typography>
 
       <Stack direction="row" spacing={0.5}>
-        <Typography variant="body2">New user?</Typography>
+        <Typography variant="body1">New user?</Typography>
 
-        <Link component={RouterLink} href={paths.auth.jwt.register} variant="subtitle2">
+        <Link component={RouterLink} href={paths.auth.jwt.register} variant="subtitle1">
           Create an account
         </Link>
       </Stack>
@@ -87,7 +96,24 @@ export default function JwtLoginView() {
 
   const renderForm = (
     <Stack spacing={2.5}>
-      <RHFTextField name="email" label="Email address" />
+      <RHFTextField name="username" label="Username" />
+
+      <RHFTextField
+        name="cognitoPw"
+        label="Password"
+        type={password.value ? 'text' : 'password'}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton onClick={password.onToggle} edge="end">
+                <Iconify icon={password.value ? 'solar:eye-bold' : 'solar:eye-closed-bold'} />
+              </IconButton>
+            </InputAdornment>
+          ),
+        }}
+      />
+
+      {/* <RHFTextField name="email" label="Email Address" />
 
       <RHFTextField
         name="password"
@@ -102,7 +128,7 @@ export default function JwtLoginView() {
             </InputAdornment>
           ),
         }}
-      />
+      /> */}
 
       <Link variant="body2" color="inherit" underline="always" sx={{ alignSelf: 'flex-end' }}>
         Forgot password?
@@ -121,6 +147,19 @@ export default function JwtLoginView() {
     </Stack>
   );
 
+  const renderCopyright = (
+    <Typography
+      variant="body2"
+      color="text.secondary"
+      align="center"
+      sx={{marginTop: 2}}
+    >
+      {"Copyright © "}
+      <Link href="#">Nuoa</Link> {new Date().getFullYear()}
+      {"."}
+    </Typography>
+  )
+
   return (
     <>
       {renderHead}
@@ -138,6 +177,8 @@ export default function JwtLoginView() {
       <FormProvider methods={methods} onSubmit={onSubmit}>
         {renderForm}
       </FormProvider>
+
+      {renderCopyright}
     </>
   );
 }
